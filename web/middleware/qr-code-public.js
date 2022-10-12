@@ -5,6 +5,7 @@
 import QRCode from "qrcode";
 import { QRCodesDB } from "../qr-codes-db.js";
 import { getQrCodeOr404 } from "../helpers/qr-codes.js";
+
 export default function applyQrCodePublicEndpoints(app) {
   /*
     The URL for a QR code image.

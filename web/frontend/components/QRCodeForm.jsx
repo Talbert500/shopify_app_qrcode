@@ -52,33 +52,34 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
 
     It will be replaced by a different function when the frontend is connected to the backend.
   */
-  const onSubmit = useCallback((body) => {
-    (async () => {
-      const parsedBody = body;
-      parsedBody.destination = parsedBody.destination[0];
-      const QRCodeId = QRCode?.id;
-      const url = QRCodeId ? `/api/qrcodes/${QRCodeId}` : `/api/qrcodes`;
-      const method = QRCodeId ? "PATCH" : "POST";
-      const response = await fetch(url, {
-        method,
-        body: JSON.stringify(parsedBody),
-        headers: { "Content-Type": "application/json" },
-      });
-      if (response.ok) {
-        makeClean();
-        const QRCode = await response.json();
+  const onSubmit = useCallback(
+    (body) => {
+      (async () => {
+        const parsedBody = body;
+        parsedBody.destination = parsedBody.destination[0];
+        const QRCodeId = QRCode?.id;
+        const url = QRCodeId ? `/api/qrcodes/${QRCodeId}` : `/api/qrcodes`;
+        const method = QRCodeId ? "PATCH" : "POST";
+        const response = await fetch(url, {
+          method,
+          body: JSON.stringify(parsedBody),
+          headers: { "Content-Type": "application/json" },
+        });
+        if (response.ok) {
+          makeClean();
+          const QRCode = await response.json();
 
-        if (!QRCodeId) {
-          navigate(`/qrcodes/${QRCode.id}`);
-
-        } else {
-          setQRCode(QRCode);
+          if (!QRCodeId) {
+            navigate(`/qrcodes/${QRCode.id}`);
+          } else {
+            setQRCode(QRCode);
+          }
         }
-      }
-
-    })();
-    return { status: "success" };
-  }, [QRCode, setQRCode])
+      })();
+      return { status: "success" };
+    },
+    [QRCode, setQRCode]
+  );
 
   /*
     Sets up the form state with the useForm hook.
@@ -217,9 +218,28 @@ export function QRCodeForm({ QRCode: InitialQRCode }) {
 
     For now, it contains only the default value.
   */
-    const isLoadingDiscounts = true;
-    const discountOptions = [NO_DISCOUNT_OPTION];
+  const {
+    data: discounts,
+    isLoading: isLoadingDiscounts,
+    isError: discountsError,
+    /* useAppQuery makes a query to `/api/discounts`, which the backend authenticates before fetching the data from the Shopify GraphQL Admin API */
+  } = useAppQuery({ url: "/api/discounts" });
 
+  const discountOptions = discounts
+    ? [
+        NO_DISCOUNT_OPTION,
+        ...discounts.codeDiscountNodes.edges.map(
+          ({ node: { id, codeDiscount } }) => {
+            DISCOUNT_CODES[id] = codeDiscount.codes.edges[0].node.code;
+
+            return {
+              label: codeDiscount.codes.edges[0].node.code,
+              value: id,
+            };
+          }
+        ),
+      ]
+    : [];
 
   const imageSrc = selectedProduct?.images?.edges?.[0]?.node?.url;
   const originalImageSrc = selectedProduct?.images?.[0]?.originalSrc;
